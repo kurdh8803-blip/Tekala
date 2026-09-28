@@ -1,0 +1,185 @@
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Scanner;
+
+// کلاس بۆ بەردی دۆمینە
+class Domino {
+    int left;
+    int right;
+
+    public Domino(int left, int right) {
+        this.left = left;
+        this.right = right;
+    }
+
+    // پیچاندنی بەردەکە
+    public void flip() {
+        int temp = left;
+        left = right;
+        right = temp;
+    }
+
+    @Override
+    public String toString() {
+        return "[" + left + "|" + right + "]";
+    }
+}
+
+// کلاس سەرەکی یاری
+public class KurdishDominoGame {
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        List<Domino> deck = new ArrayList<>();
+        
+        // دروستکردنی هەموو 28 بەردی دۆمینە
+        for (int i = 0; i <= 6; i++) {
+            for (int j = i; j <= 6; j++) {
+                deck.add(new Domino(i, j));
+            }
+        }
+
+        // تێکەڵکردنی بەردەکان
+        Collections.shuffle(deck);
+
+        // دابەشکردنی بەردەکان
+        List<Domino> playerHand = new ArrayList<>(deck.subList(0, 7));
+        List<Domino> aiHand = new ArrayList<>(deck.subList(7, 14));
+        List<Domino> board = new ArrayList<>(); // بۆ دانانی بەردەکانی سەر مێز
+
+        System.out.println("=== بەخێربێیت بۆ یاری دۆمینەی کوردی ===");
+        
+        // دۆزینەوەی بەردی دەستپێک (بەردی 6|6)
+        Domino startingDomino = null;
+        for (Domino d : playerHand) {
+            if (d.left == 6 && d.right == 6) { startingDomino = d; break; }
+        }
+        for (Domino d : aiHand) {
+            if (d.left == 6 && d.right == 6) { startingDomino = d; break; }
+        }
+
+        // ئەگەر بەردی 6|6 نەبوو، یەکەم بەردی هەر یاریزانێک دەنێین
+        if (startingDomino == null) {
+            startingDomino = playerHand.remove(0);
+            System.out.println("یاریزان بەردی یەکەم دەنێت: " + startingDomino);
+        } else {
+            if (playerHand.contains(startingDomino)) {
+                playerHand.remove(startingDomino);
+                System.out.println("تۆ بەردی 6|6 دەنێیت!");
+            } else {
+                aiHand.remove(startingDomino);
+                System.out.println("کۆمپیوتەر بەردی 6|6 دەنێت!");
+            }
+        }
+        board.add(startingDomino);
+
+        boolean gameOver = false;
+        boolean playerTurn = true; // یاریزان یەکەم دەست پێدەکات
+
+        while (!gameOver) {
+            System.out.println("\n--- مێزی یاری ---");
+            System.out.println("بەردەکانی سەر مێز: " + board);
+            
+            if (playerTurn) {
+                System.out.println("\nبەردەکانی تۆ: " + playerHand);
+                if (playerHand.isEmpty()) {
+                    System.out.println("🎉 پیرۆزە! تۆ یاریت بردەوە!");
+                    break;
+                }
+
+                System.out.print("ژمارەی بەردەکە هەڵبژێرە (0 تا " + (playerHand.size() - 1) + ") یان -1 بۆ پاس: ");
+                int choice = scanner.nextInt();
+
+                if (choice == -1) {
+                    System.out.println("تۆ پاست کرد.");
+                    playerTurn = false;
+                    continue;
+                }
+
+                if (choice < 0 || choice >= playerHand.size()) {
+                    System.out.println("هەڵبژاردنێکی هەڵە! تکایە دووبارە هەوڵبدە.");
+                    continue;
+                }
+
+                Domino selected = playerHand.get(choice);
+                int boardLeft = board.get(0).left;
+                int boardRight = board.get(board.size() - 1).right;
+
+                // پشکنین ئەگەر بەردەکە بگونجێت لەگەڵ مێز
+                if (selected.right == boardLeft) {
+                    board.add(0, selected);
+                    playerHand.remove(choice);
+                    System.out.println("تۆ " + selected + " ت دانا لە لای چەپ.");
+                    playerTurn = false;
+                } else if (selected.left == boardLeft) {
+                    selected.flip();
+                    board.add(0, selected);
+                    playerHand.remove(choice);
+                    System.out.println("تۆ " + selected + " ت دانا لە لای چەپ.");
+                    playerTurn = false;
+                } else if (selected.left == boardRight) {
+                    board.add(selected);
+                    playerHand.remove(choice);
+                    System.out.println("تۆ " + selected + " ت دانا لە لای ڕاست.");
+                    playerTurn = false;
+                } else if (selected.right == boardRight) {
+                    selected.flip();
+                    board.add(selected);
+                    playerHand.remove(choice);
+                    System.out.println("تۆ " + selected + " ت دانا لە لای ڕاست.");
+                    playerTurn = false;
+                } else {
+                    System.out.println("❌ ئەم بەردە ناگونجێت لەگەڵ مێز! تکایە بەردێکی تر هەڵبژێرە.");
+                }
+
+            } else {
+                // نۆری کۆمپیوتەر (AI)
+                System.out.println("\nکۆمپیوتەر دەستی پێکرد...");
+                boolean played = false;
+                int boardLeft = board.get(0).left;
+                int boardRight = board.get(board.size() - 1).right;
+
+                for (int i = 0; i < aiHand.size(); i++) {
+                    Domino d = aiHand.get(i);
+                    if (d.right == boardLeft) {
+                        board.add(0, d);
+                        aiHand.remove(i);
+                        played = true;
+                        break;
+                    } else if (d.left == boardLeft) {
+                        d.flip();
+                        board.add(0, d);
+                        aiHand.remove(i);
+                        played = true;
+                        break;
+                    } else if (d.left == boardRight) {
+                        board.add(d);
+                        aiHand.remove(i);
+                        played = true;
+                        break;
+                    } else if (d.right == boardRight) {
+                        d.flip();
+                        board.add(d);
+                        aiHand.remove(i);
+                        played = true;
+                        break;
+                    }
+                }
+
+                if (!played) {
+                    System.out.println("کۆمپیوتەر پاسی کرد.");
+                } else {
+                    System.out.println("کۆمپیوتەر بەردێکی دانا.");
+                }
+
+                if (aiHand.isEmpty()) {
+                    System.out.println("😢 کۆمپیوتەر یارییەکەی بردەوە!");
+                    break;
+                }
+                playerTurn = true;
+            }
+        }
+        scanner.close();
+    }
+}
